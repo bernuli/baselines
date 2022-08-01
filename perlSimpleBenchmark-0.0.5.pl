@@ -65,7 +65,6 @@ use Sys::Hostname;
 my $hostname = hostname; 
 
 
-my $sysctl_ref;
 
 
 #### Set OS flag
@@ -118,11 +117,26 @@ unless ($^V =~ /^v5.18/) {
 #
 
 my  $notes = "";            ## Run notes will go to Notes column of csv output.
+
 my  @passTimes;             ## Array of array.  For each pass store the number of threads and time to complete.
 	$passTimes[0]=["0","0"];
 	
 my $maxnumberOfPasses = 128;
+
 my $usage             = "\nUsage: $scriptName [-a -p -n -h]\n\n\t[-p (1-$maxnumberOfPasses)] Passes. Specify number of passes.\n\n\t[-n] Notes. Text to add to Notes column of CSV output.\n\n\t[-a] Anonomyous. Omit machine name and SN from CSV output.\n\n\t[-h] Help. Display usage info.\n\n\nEXAMPLES\n\n\t./$scriptName -p 3\n\n\t./$scriptName -p 3 -n \"clean install of macOS 11\"\n\n\t./$scriptName -n \"clean install of macOS 11\"\n\n\t./$scriptName -n clean\ install\ of\ macOS\ 11\n";
+
+my $sysctl_ref;
+
+
+my  @header;              ## Header row for CSV output.
+
+my  %machineDetails;      ## Property and value of various machine specs.
+
+my  @cpuLookupTable;      ## CPU data from ark.intel.com
+
+my  $outDir ; #           = "baselines";  ## This is where we will write CSV file.
+
+my  $outputFileName     = "$scriptName-$scriptVersion-$hostname.csv";
 
 #
 ##
@@ -138,7 +152,7 @@ my $usage             = "\nUsage: $scriptName [-a -p -n -h]\n\n\t[-p (1-$maxnumb
 ##
 #
 
-my $numberOfPasses     = 8;
+my $numberOfPasses     = 8;  ## Default here.  Can be overridden with -p flag.
 my $numberofInnerLoops = 1000000000;
 #$numberofInnerLoops    = 100000000;  ## for testing
 my $anonymous          = 0;
@@ -150,12 +164,17 @@ my $anonymous          = 0;
 ####  Config Globals
 
 
+
+
 parseArgs() if @ARGV;  ## Change variables according to run time arguments. 
+
+
 
 print "$scriptName\n";
 print "Script Version:  $scriptVersion\n";
 print "Perl Version ^V: $^V\n";
 print "Perl Version  ]:  $]\n";
+
 
 
 
@@ -208,15 +227,7 @@ unless ($thisOS eq "win") {
 
 
 
-###### Output data in CSV format.  Include machine specs.
-
-my  @header;              ## Header row for CSV output.
-my  %machineDetails;      ## Property and value of various machine specs.
-my  @cpuLookupTable;      ## CPU data from ark.intel.com
-
-my  $outDir ; #           = "baselines";  ## This is where we will write CSV file.
-my  $outputFileName     = "perlSimpleBenchmark-$scriptVersion-$hostname.csv";
-
+### Build output directory structure.
 
 if ( $ENV{SYSTEMDRIVE} && $ENV{HOMEPATH} ) {
 	$outDir = "$ENV{SYSTEMDRIVE}$ENV{HOMEPATH}"; 
@@ -227,7 +238,6 @@ if ( $ENV{'HOME'} ) {
 }
 
 
-# Build output directory structure.
 unless ( -d $outDir ) { print "outDir does not exist. [$outDir]  Connot continute.\n"; exit;}
 
 my @outDirs;
@@ -254,6 +264,7 @@ print "Will save results in $outDir\n";
 
 
 
+
 ## Get data from system_profiler to %machineDetails
 if ($thisOS eq "mac") {
 
@@ -275,27 +286,21 @@ unless ($thisOS eq 'win') {
 
 if ($thisOS eq 'win') {
 	
-# 	my @results = `wmic cpu get name`;
-# 	#s/\r?\n//g for @results ; ## Remove newlines and carriage returns from command results.
-# 	my $cpuInfo = $results[1];
-# 	$cpuInfo =~ s/\r?\n//g; ## Remove newlines and carriage returns
-# 	$cpuInfo =~ s/\s+$//;   ## Remove trailing white space;
 	$machineDetails{'cpu.marketing.string'} = winCommandResults("wmic cpu get name");
 
 }
+
+
 
 
 ## Add alias for cpu.marketing.string 
 if ( $machineDetails{'machdep.cpu.brand_string'} ) { $machineDetails{'cpu.marketing.string'} =  $machineDetails{'machdep.cpu.brand_string'}; }
 if ( $machineDetails{'hw.model'} )                 { $machineDetails{'cpu.marketing.string'} =  $machineDetails{'hw.model'}; }
 
-# print "\n\n";
-# for my $key (sort keys %machineDetails) { print $key . " "; print $machineDetails{$key}; print chr(012);}
-# exit;
+
 
 
 ## Get CPU max turbo using lookup table compiled from ark.intel.com
-
 
 $machineDetails{'Max Turbo'} = "unknown"; 
 
@@ -324,17 +329,18 @@ if ( defined $machineDetails{'win.cpu'} ) {  ## windows
 
 
 
-
-
-
 #### Gather data into commonRowData array for easy output later.
 
-## We will write 2 rows, one with straight times, one with delta times.
+## We will write 2 rows, one with time elapsed and one with delta times.
 ## Therefore put identical fields into commonRowData.  
 my @commonRowData; 
 
+
+
 ## Run Date
 push @commonRowData,  timestamp_excel(time) . "";
+
+
 
 
 ## Run UUID
@@ -356,6 +362,8 @@ $uuid[0] = $scriptStartTime unless $uuid[0];  ## Failsafe incase no uuid, use sc
 push @commonRowData, $uuid[0];
 
 
+
+
 ## Computer Name
 if ($anonymous) {
 	push @commonRowData,  "anon";
@@ -364,12 +372,16 @@ if ($anonymous) {
 }
 
 
+
+
 ## Serial Number
 if ($anonymous) {
 	push @commonRowData,  "anon";
 } else {
 	push @commonRowData,  getItemFromMachineDetails("Serial Number (system)");
 }
+
+
 
 
 ## ModelName
@@ -423,10 +435,6 @@ push @commonRowData,  getItemFromMachineDetails("machdep.cpu.thread_count");
 
 
 
-
-
-
-
 ## uname -a or ver
 ## Retrieve output of ver command on windows, or uname -a command on unix
 my $uname_or_ver = "";
@@ -444,8 +452,12 @@ if ($thisOS eq "win") {
 push @commonRowData,  $uname_or_ver;
 
 
+
+
 ## perl Version
 push @commonRowData,  "$]";  ## use $] for backwards compatibility. 
+
+
 
 
 ## lsofUser
@@ -462,6 +474,8 @@ if ($thisOS eq "win") {
 	push @commonRowData,  scalar @lsofData;
 
 }
+
+
 
 
 ## lsofRoot (placeholder)
@@ -490,6 +504,7 @@ my @deltaTimesRow;
 
 
 
+
 foreach (@commonRowData) {
 
 	## CSV quoting and ;. 
@@ -511,9 +526,9 @@ for my $i (1 .. $#passTimes) {
 
 
 
+
 ## update UID field, adding delta character.
 $deltaTimesRow[1] = "\x{e2}\x{88}\x{86} - $deltaTimesRow[1]";  ## Prepend delta character to UUID field.
-
 
 
 for my $i (1 .. $#passTimes) {
@@ -524,12 +539,16 @@ for my $i (1 .. $#passTimes) {
 }
 
 
+
+
 ## Remove trailing comma from last field.
 $absoluteTimesRow[$#absoluteTimesRow] =~ s/,$//;
 $deltaTimesRow[$#deltaTimesRow] =~ s/,$//;
 
 push @absoluteTimesRow, "\n";
 push @deltaTimesRow, "\n";
+
+
 
 
 ## Send a copy of CSV output to stdout.
@@ -541,8 +560,9 @@ print @deltaTimesRow;
 print "\nCSV END\n";
 
 
-#### Write to outputFile, use CSV format.
 
+
+#### Write to outputFile, use CSV format.
 my $outputFile = "$outDir/$outputFileName";
 
 
@@ -567,6 +587,7 @@ if ($sendHeader == 1) {
 
 }
 
+
 ## Write absolute times row;
 print FHO @absoluteTimesRow;
 
@@ -574,7 +595,9 @@ print FHO @absoluteTimesRow;
 print FHO @deltaTimesRow;
 
 
+
 close FHO or warn "Could not close filehandle on $outputFile.\n";
+
 
 
 
