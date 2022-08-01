@@ -18,18 +18,17 @@ my $scriptStartTime  = time;
 #	Because different versions of perl vary in speed of executing the
 #	foreach loop, we will ask for version 5.18 of perl.  Although this
 #	script should work in most any perl version.
-#
-#	On the first pass, perlSimpleBenchmark times a single instance of
-#	the inner loop (0 .. 1000000000) and reports back the elapsed time. 
-#	On the second pass it forks 2 instances of the inner loop and
-#	measures the time to complete both loops in parallel.  Every
-#	following pass it adds 1 instance of the inner foreach loop, getting
-#	the elapsed time to complete all in parallel.   The default is 8
-#	passes, which would be 8 threads running simultaneously.  On the 8th
-#	pass, you are measuring the time to complete 8 loops in parallel. 
-#	You can reduce the number of passes with the -l flag.  For instance,
-#	-l 3 would only do 3 passes, with the last pass running 3 loops in
-#	parallel.
+# 
+#	On the first pass, perlSimpleBenchmark times a single instance of the
+#	inner loop (0 .. 1000000000) and reports back the elapsed time.  On the
+#	second pass it forks 2 instances of the inner loop and measures the time
+#	to complete both loops in parallel.  Every following pass it adds 1
+#	instance of the inner foreach loop, getting the elapsed time to complete
+#	all in parallel.   The default is 8 passes, which would be 8 threads
+#	running simultaneously.  On the 8th pass, you are measuring the time to
+#	complete 8 loops in parallel.  You can reduce the number of passes with
+#	the -p flag.  For instance, -p 3 would only do 3 passes, with the last
+#	pass running 3 loops in parallel.
 #
 #
 #	While running, status info is sent to STDOUT.
@@ -46,10 +45,11 @@ my $scriptStartTime  = time;
 #  0.0.4  Moved benchmark engine to a subroutine.  perlSimpleBenchmarkEngine_0_3_0.
 #  0.0.5  Cleaned up status output to STDOUT.
 #  0.0.5  Rewrote parseArgs subroutine.
-#  0.0.5  Added runtime option -a.
+#  0.0.5  Added command line option -a.
 #  0.0.5  Updated CSV output, accounting for win mac or unix.
 #  0.0.5  Build a separate array for each row of output.
 #  0.0.5  Added more sys info for Windows machines.
+#  0.0.5  Added command line option -n.
 #  0.0.5  Write out a copy of sysctl -a for each run to the sub directory sysctls.
 
 
