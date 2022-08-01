@@ -12,7 +12,7 @@ my $scriptStartTime  = time;
 #	rather than to act as a dynamometer.
 #
 #	The benchmark is the elapsed time perl takes to complete an empty 
-#	foreach loop of 1,000,000,000 iterations.  This is known as the
+#	foreach loop of 1,000,000,001 iterations.  This is known as the
 #	inner loop.
 #
 #	Because different versions of perl vary in speed of executing the
