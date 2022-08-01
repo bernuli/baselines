@@ -49,6 +49,8 @@ my $scriptStartTime  = time;
 #  0.0.5  Added runtime option -a.
 #  0.0.5  Updated CSV output, accounting for win mac or unix.
 #  0.0.5  Build a separate array for each row of output.
+#  0.0.5  Added more sys info for Windows machines.
+#  0.0.5  Write out a copy of sysctl -a for each run to the sub directory sysctls.
 
 
 
