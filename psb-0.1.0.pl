@@ -60,10 +60,8 @@ my $scriptStartTime  = time;
 
 
 
-
 ## Need to use a module for more accurate loop timing.
 use Time::HiRes qw(gettimeofday);
-
 
 
 
@@ -79,7 +77,6 @@ if ($^O =~ /MSwin32/i) {
 }
 
 
-
  
 #### Get machine uptime before running benchmarks.
 my $beginningUptime = "";
@@ -88,7 +85,6 @@ unless ($thisOS eq "win") {
 	my @beginningUptime = commandResults("uptime");
 	$beginningUptime = $beginningUptime[0];
 }
-
 
 
 
@@ -104,7 +100,6 @@ unless ($^V =~ /^v5.18/) {
 	chomp $response;
 	unless ($response eq "y" || $response eq "Y") { print "Exiting.\n"; exit;}
 }
-
 
 
 
@@ -157,18 +152,15 @@ my $usage = "\nUsage: $scriptName [-a -h -n -o -p]\n\n\t[-a] Anonymous. Omit mac
 
 
 
-
-
-
-
-
 print "$scriptName\n";
 print "Script Version:  $scriptVersion\n";
 print "Perl Version ^V: $^V\n";
 print "Perl Version  ]:  $]\n";
 
 
+
 parseArgs() if @ARGV;  ## Change variables according to run time arguments. 
+
 
 
 unless ($anonymous){
@@ -182,6 +174,9 @@ unless ($anonymous){
 	$hostname = "hostname" unless $hostname;
 
 }
+
+
+
 
 
 
@@ -217,6 +212,7 @@ for my $i (1 .. $numberOfPasses) {
 
 
 
+
 #### Get the load average AFTER running benchmarks.
 
 my $endingUptime = "";
@@ -248,7 +244,8 @@ if ( defined $outDir && -d $outDir && -w $outDir ) {
 
 }
 
-unless ( -d $outDir ) { print "outDir does not exist. [$outDir]  Connot continute.\n"; exit;}
+unless ( -d $outDir  ) { print "outDir does not exist. [$outDir]  Connot continute.\n"; exit;}
+unless ( -w $outDir  ) { print "outDir is not writeble. [$outDir]  Connot continute.\n"; exit;}
 
 my @outDirs;
 push @outDirs, $outDir; 
@@ -350,7 +347,9 @@ push @commonRowData,  timestamp_excel($scriptStartTime) . "";
 
 
 
-## Run UUID
+## Run UUID.  Used in CSV output to tie results from multiple reports to the 
+## same run.
+
 my @uuid;
 
 if ($thisOS eq "win") {
@@ -364,7 +363,7 @@ if ($thisOS eq "win") {
 
 }
  
-$uuid[0] = $scriptStartTime unless $uuid[0];  ## Failsafe incase no uuid, use scriptStartTime instead.
+$uuid[0] = "$hostname-$scriptStartTime" unless $uuid[0];  ## Failsafe incase no uuid, use scriptStartTime instead.
 
 push @commonRowData, $uuid[0];
 
@@ -373,7 +372,6 @@ push @commonRowData, $uuid[0];
 
 ## Computer Name
 push @commonRowData,  $hostname;
-
 
 
 
@@ -397,8 +395,10 @@ push @commonRowData,  getItemFromMachineDetails("Model Name");
 
 
 
+
 ## Model Identifier
 push @commonRowData,  getItemFromMachineDetails("Model Identifier");
+
 
 
 
@@ -407,8 +407,10 @@ push @commonRowData,  getItemFromMachineDetails("Processor Name");
 
 
 
+
 ## Processor Speed
 push @commonRowData,  getItemFromMachineDetails("Processor Speed");
+
 
 
 
@@ -417,8 +419,10 @@ push @commonRowData,  getItemFromMachineDetails("Boot ROM Version");
 
 
 
+
 ## SMC Version (system)
 push @commonRowData,  getItemFromMachineDetails("SMC Version (system)");
+
 
 
 
@@ -427,13 +431,16 @@ push @commonRowData,  getItemFromMachineDetails("System Version");
 
 
 
+
 ## CPU Details marketing string  
 push @commonRowData,  getItemFromMachineDetails("cpu.marketing.string");
 
 
 
+
 ## Current Processor Speed
 push @commonRowData,  getItemFromMachineDetails("hw.cpufrequency");
+
 
 
 
@@ -443,13 +450,16 @@ push @commonRowData,  getItemFromMachineDetails("Max Turbo");
 
 
 
+
 ## Total Number of Cores
 push @commonRowData,  getItemFromMachineDetails("machdep.cpu.core_count");
 
 
 
+
 ## Threads
 push @commonRowData,  getItemFromMachineDetails("machdep.cpu.thread_count");
+
 
 
 
@@ -471,8 +481,10 @@ push @commonRowData,  $uname_or_ver;
 
 
 
+
 ## perl Version
 push @commonRowData,  "$]";  ## use $] for backwards compatibility. 
+
 
 
 
@@ -493,8 +505,10 @@ if ($thisOS eq "win") {
 
 
 
+
 ## lsofRoot (placeholder)
 push @commonRowData,  "";
+
 
 
 
@@ -503,8 +517,10 @@ push @commonRowData,  "$scriptName $scriptVersion benchmarkEngineVersion $benchm
 
 
 
+
 ## Beginning Uptime
 push @commonRowData,  "$beginningUptime";
+
 
 
 ## Ending Uptime
@@ -512,8 +528,11 @@ push @commonRowData,  "$endingUptime";
 
 
 
+
 ## Notes
 push @commonRowData,  $notes;
+
+
 
 
 
